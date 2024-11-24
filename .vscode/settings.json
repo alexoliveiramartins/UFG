@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "fracao.h": "c",
+        "lista.h": "c",
+        "stdio.h": "c"
+    }
+}
