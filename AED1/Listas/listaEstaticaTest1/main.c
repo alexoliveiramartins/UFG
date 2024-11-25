@@ -1,6 +1,11 @@
 #include <stdio.h>
 #include "Lista.h"
 
+// Teste de lista sequencial de numeros sem encapsulamento e estatica.
+
+// Funcionalidades: adicionar elemento, criar lista, remover elemento e
+// imprimir lista.
+
 int main(){
     Lista lista1 = createList(10);
     addElement(&lista1, 1);
