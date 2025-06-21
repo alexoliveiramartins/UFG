@@ -1,5 +1,6 @@
 // Minha tentativa de implementacao da Cifra de Cesar
 #include <stdio.h>
+#include <string.h>
 
 // ascii -> A = 65 / Z = 90
 
@@ -17,6 +18,17 @@ char decrypt(char c, int k){
     return c;
 }
 
+void attack(char *string){
+    char aux[5];
+    for(int i = 0; i < 26; i++){
+        strcpy(aux, string);
+        for(int c = 0; c < 4; c++){
+            aux[c] = decrypt(aux[c], i);
+        }
+        printf("Tentativa %d: %s\n", i+1, aux);
+    }
+}
+
 int main(){
     int k = 5;
     
@@ -25,12 +37,12 @@ int main(){
     for(int i = 0; i < 4; i++){
         nome[i] = encrypt(nome[i], k);
     }
+    printf("Encriptado: %s\n", nome);
 
-    printf("%s\n", nome);
+    attack(nome);
 
     for(int i = 0; i < 4; i++){
         nome[i] = decrypt(nome[i], k);
     }
-
-    printf("%s\n", nome);
+    printf("Decriptado: %s\n", nome);
 }
