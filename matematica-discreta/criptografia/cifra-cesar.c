@@ -1,7 +1,7 @@
 // Minha tentativa de implementacao da Cifra de Cesar
 #include <stdio.h>
 
-// ascii -> a = 65 / z = 90
+// ascii -> A = 65 / Z = 90
 
 char encrypt(char c, int k){
     if(k >= 26) k %= 26;
@@ -11,7 +11,7 @@ char encrypt(char c, int k){
 }
 
 char decrypt(char c, int k){
-    if(k >= 26) k % 26;
+    if(k >= 26) k %= 26;
     c -= k;
     if(c < 65) c += 26;
     return c;
