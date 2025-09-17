@@ -34,18 +34,18 @@ int main() {
 
   printf("-----------------------------------------------------------------");
 
-//   l = 83728472363;
-//   i = (int)l;
-//   s = (short)l;
+  l = 83728472363;
+  i = (int)l;
+  s = (short)l;
 
-//   printf("--- c:\n");
-//   dump(&l, sizeof(l));
+  printf("--- c:\n");
+  dump(&l, sizeof(l));
 
-//   printf("--- i:\n");
-//   dump(&i, sizeof(i));
+  printf("--- i:\n");
+  dump(&i, sizeof(i));
 
-//   printf("--- s:\n");
-//   dump(&s, sizeof(s));
+  printf("--- s:\n");
+  dump(&s, sizeof(s));
 
   return 0;
 }
