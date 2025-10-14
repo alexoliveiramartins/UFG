@@ -7,15 +7,14 @@ fmt: .string "Soma: %ld\n"
 # Definição das variáveis aqui...
 
 # long sum = 0
-.globl sum
-.align 8
+   .globl   sum
+   .align   8
 sum:    .quad 0
 
 # long vet[5] = {10, 20, 30, 40, 50};
-
-.globl vet
-.align 8
-vet: .quad 10, 20, 30, 40, 50
+   .globl   vet
+   .align   8
+vet:     .quad 10, 20, 30, 40, 50
 
 .text
 
@@ -27,11 +26,24 @@ main:
    # Inicializações de 'i' e 'ptr' aqui
    # Obs: utilize %ecx para 'i' e %r8 para 'ptr'
 
+   mov   $vet, %r8
+   mov   $0, %ecx
+
 beginwhile:
-   cmpl $5, %ecx
-   jge  endwhile      # while() {
+   cmpl  $5, %ecx
+   jge   endwhile      # while() {
 
    # Bloco do while aqui...
+
+   # sum = sum + *ptr
+   movq  (%r8), %rbx
+   addq   %rbx, sum
+
+   # ptr++
+   addq  $8,%r8
+
+   # i++
+   incl  %ecx
 
    jmp beginwhile     # }
 endwhile:
