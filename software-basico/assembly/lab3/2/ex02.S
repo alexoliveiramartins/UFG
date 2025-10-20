@@ -26,13 +26,9 @@ ex01:
     compl   $5, %eax
     jl      end_if_2
 
-
-
 end_if_2:
     movl    b, %ecx
     
-
-
 end_if_1:
 
    leave
