@@ -4,6 +4,9 @@ str01: .string "Hello"
 
 .data
 
+# .globl str01
+# str01: .string "Hello"
+
 .globl val
 .align 4
 val: .int 432
