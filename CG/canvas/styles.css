@@ -1,0 +1,23 @@
+#tela {
+  border-width: 1rem;
+  width: 500px;
+  height: 500px;
+  /* background-color: bisque; */
+}
+
+#canvas {
+  border: 1px solid black;
+}
+
+#cursor {
+  background-color: black;
+  width: 30px;
+  height: 30px;
+}
+
+#instrucoes {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  margin-top: 40px;
+}
