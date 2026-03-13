@@ -1,9 +1,6 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
@@ -21,8 +18,6 @@
     <div>
       <span>Referencias:</span>
       <a
-        target="_blank"
-        rel="noopener"
         href="https://developer.mozilla.org/pt-BR/docs/Web/API/Canvas_API/Tutorial/Basic_usage"
       >
         Canvas tutorial - APIs da Web - MDN - Mozilla
@@ -34,7 +29,6 @@
     let canvas = document.getElementById("canvas");
     let ctx = canvas.getContext("2d");
     ctx.fillStyle = "#0";
-
     let x_pos = 275;
     let y_pos = 275;
     ctx.fillRect(x_pos, y_pos, 8, 8);
