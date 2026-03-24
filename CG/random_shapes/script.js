@@ -34,17 +34,15 @@ function circBrasenham(x, y, r){
     while(xc <= yc){
         if(d < 0){
             d = d+4*xc+6
-            desenharPontos(x, y, xc, yc, 2)
+            desenharPontos(x, y, xc, yc, 1)
         } else{
             d = d+4 * (xc - yc)+10
             yc = yc - 1
-            desenharPontos(x, y, xc, yc, 2)
+            desenharPontos(x, y, xc, yc, 1)
         }
         xc = xc+1;
     }
 }
-ctx.fillStyle = `rgba(${random(255)}, ${random(255)}, ${random(255)}, 1)`;
-circBrasenham(random(255),random(255),random(100))
 
 function linhaDDA(x1, y1, x2, y2){
     const m = (x1 - x2)/(y1 - y2);
@@ -54,9 +52,25 @@ function linhaDDA(x1, y1, x2, y2){
     }
 }
 
-ctx.fillStyle = `rgba(${random(255)}, ${random(255)}, ${random(255)}, 1)`;
-linhaDDA(random(550), random(550), random(550), random(550))
-
-
+let running = true;
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") running = false;
+});
+async function loop(){
+    for(let i = 0; i < 100000000; i++){
+        if(running === false) break;
+        const linhaOuCirculo = random(2)
+        if(linhaOuCirculo == 1){
+            ctx.fillStyle = `rgba(${random(255)}, ${random(255)}, ${random(255)}, 1)`;
+            linhaDDA(random(550), random(550), random(550), random(550))
+        }
+        else {
+            ctx.fillStyle = `rgba(${random(255)}, ${random(255)}, ${random(255)}, 1)`;
+            circBrasenham(random(550),random(500),random(255))
+        }
+        await sleep(200)
+    }
+}
+loop()
 
 // https://www.geeksforgeeks.org/computer-graphics/dda-line-generation-algorithm-computer-graphics/
