@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <title>T3 Complementar - Polígonos - Alex Benjamim de Oliveira Martins 202301419</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <h1>T3 Complementar – Desenho e Preenchimento de Polígonos</h1>
+    <h2>Alex Benjamim de Oliveira Martins – 202301419</h2>
+
+    <div id="controles">
+      <button id="btnExecutar">Executar Benchmark (1000 iterações)</button>
+      <span id="statusMsg"></span>
+    </div>
+
+    <div id="canvases">
+      <div class="canvas-box">
+        <h3>Manual (DDA + Scanline)</h3>
+        <canvas id="canvasManual" width="500" height="500"></canvas>
+        <p id="tempoManual">Tempo: —</p>
+      </div>
+      <div class="canvas-box">
+        <h3>WebGL</h3>
+        <canvas id="canvasWebGL" width="500" height="500"></canvas>
+        <p id="tempoWebGL">Tempo: —</p>
+      </div>
+      <div class="canvas-box">
+        <h3>Three.js</h3>
+        <canvas id="canvasThree" width="500" height="500"></canvas>
+        <p id="tempoThree">Tempo: —</p>
+      </div>
+    </div>
+
+    <div id="resultados">
+      <h3>Resultados Comparativos</h3>
+      <table id="tabelaResultados">
+        <thead>
+          <tr>
+            <th>Abordagem</th>
+            <th>Tempo Total (ms)</th>
+            <th>Tempo Médio por Iteração (ms)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Manual (DDA + Scanline)</td><td id="resManual">—</td><td id="resManualMedia">—</td></tr>
+          <tr><td>WebGL</td><td id="resWebGL">—</td><td id="resWebGLMedia">—</td></tr>
+          <tr><td>Three.js</td><td id="resThree">—</td><td id="resThreeMedia">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div id="infoPoligono">
+      <h3>Polígono Gerado</h3>
+      <p id="verticesInfo">Pressione o botão para gerar.</p>
+    </div>
+
+    <!-- Three.js via ES Module map -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+      }
+    }
+    </script>
+    <script type="module" src="script.js"></script>
+  </body>
+</html>
