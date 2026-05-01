@@ -1,0 +1,15 @@
+#tela {
+  display: flex;
+  gap: 1rem;
+}
+
+canvas {
+  border: 1px solid black;
+}
+
+#instrucoes {
+  display: flex;
+  flex-direction: column;
+  padding: 1rem;
+  margin-top: 40px;
+}
