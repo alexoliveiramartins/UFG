@@ -1,0 +1,10 @@
+OK       = '1'
+ADD      = '2'
+APPEND   = '3'
+GETVALUE = '4'
+CREATE   = '5'
+STOP     = '6'
+HOSTS    = ''
+SERVER_ADDR = '3.226.154.22'
+PORT    = 5678
+PORT_CLIENT = 5679
