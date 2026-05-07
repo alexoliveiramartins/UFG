@@ -93,14 +93,6 @@ function projetarCavaleira([x, y, z]) {
   };
 }
 
-function calcularEscala(projetados) {
-  const maxAbsX = Math.max(...projetados.map((p) => Math.abs(p.x)), 1);
-  const maxAbsY = Math.max(...projetados.map((p) => Math.abs(p.y)), 1);
-  const escalaX = (canvas.width * 0.43) / maxAbsX;
-  const escalaY = (canvas.height * 0.43) / maxAbsY;
-  return Math.min(escalaX, escalaY);
-}
-
 function paraTela(ponto, escala) {
   return {
     x: canvas.width / 2 + ponto.x * escala,
@@ -137,7 +129,7 @@ function desenharObjeto() {
     aplicarTransformacoes(p, objeto),
   );
   const projetados = transformados.map(projetarCavaleira);
-  const escala = calcularEscala(projetados);
+  const escala = 1;
   const pontosTela = projetados.map((p) => paraTela(p, escala));
 
   ctx.fillStyle = "black";
@@ -173,12 +165,12 @@ function aplicarComando(tecla) {
     l: () => (objeto.Ry += ROTATE_STEP),
     u: () => (objeto.Rz -= ROTATE_STEP),
     o: () => (objeto.Rz += ROTATE_STEP),
-    1: () => mudarEscala("X", -SCALE_STEP),
-    2: () => mudarEscala("X", SCALE_STEP),
-    3: () => mudarEscala("Y", -SCALE_STEP),
-    4: () => mudarEscala("Y", SCALE_STEP),
-    5: () => mudarEscala("Z", -SCALE_STEP),
-    6: () => mudarEscala("Z", SCALE_STEP),
+    v: () => mudarEscala("x", -SCALE_STEP),
+    b: () => mudarEscala("x", SCALE_STEP),
+    n: () => mudarEscala("y", -SCALE_STEP),
+    m: () => mudarEscala("y", SCALE_STEP),
+    x: () => mudarEscala("z", -SCALE_STEP),
+    c: () => mudarEscala("z", SCALE_STEP),
   };
 
   if (!comandos[tecla]) return false;
@@ -195,7 +187,7 @@ function alternarAjuda() {
   }
 
   helpEl.textContent =
-    "Translacao: A/D X, S/W Y, Q/E Z | Rotacao: K/I X, J/L Y, U/O Z | Escala: 1/2 X, 3/4 Y, 5/6 Z";
+    "Translacao: A/D X, S/W Y, Q/E Z | Rotacao: K/I X, J/L Y, U/O Z | Escala: V/B X, N/M Y, X/C Z";
 }
 
 function parseObjeto3D(conteudo) {
