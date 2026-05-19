@@ -17,6 +17,26 @@ type Media struct {
 	ElapsedTime time.Duration
 }
 
+func run(n int, t0 float64, tMin float64, alpha float64, debug bool) Metrics {
+	positions := make([]int, n)
+	intializeBoard(positions)
+
+	if debug {
+		printBoard(positions)
+		collisions := checkCollisions(positions)
+		fmt.Println("Colisões (tabuleiro original): ", collisions)
+	}
+
+	ans, metrics := simulatedAnaelling(positions, t0, tMin, alpha)
+
+	if debug {
+		printBoard(ans)
+		collisions := checkCollisions(ans)
+		fmt.Println("Colisões (pós-otimizações): ", collisions)
+	}
+	return metrics
+}
+
 func benchmark() {
 	n := [4]int{8, 16, 32, 128}
 	t0 := [3]float64{20, 5, 1}
@@ -28,7 +48,7 @@ func benchmark() {
 			fmt.Printf("T0 = %f | Alpha = %f\n", t0[j], alpha[j])
 			var media Metrics
 			for range 3 {
-				metrics := run(num, t0[j], TMin, alpha[j])
+				metrics := run(num, t0[j], TMin, alpha[j], false)
 				media.Collisions += metrics.Collisions
 				media.Iters += metrics.Iters
 				media.ElapsedTime += metrics.ElapsedTime
@@ -39,6 +59,9 @@ func benchmark() {
 }
 
 func printBoard(positions []int) {
+	if len(positions) > 30 {
+		return
+	}
 	for _, item := range positions {
 		for j := 0; j < len(positions); j++ {
 			if j == item {

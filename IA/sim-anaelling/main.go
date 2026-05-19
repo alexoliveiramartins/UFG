@@ -6,8 +6,6 @@ import (
 	"time"
 )
 
-// var T0 float64 = 5
-// var Alpha float64 = 0.9995
 var TMin float64 = 0.0001
 var IterMax int = 100000
 
@@ -63,19 +61,6 @@ func gerarVizinho(board []int) []int {
 	}
 }
 
-func run(n int, t0 float64, tMin float64, alpha float64) Metrics {
-	positions := make([]int, n)
-	intializeBoard(positions)
-	// printBoard(positions)
-	// collisions := checkCollisions(positions)
-	// fmt.Println(collisions)
-
-	_, metrics := simulatedAnaelling(positions, t0, tMin, alpha)
-
-	// printBoard(ans)
-	return metrics
-}
-
 func simulatedAnaelling(board []int, t0 float64, TMin float64, alpha float64) ([]int, Metrics) {
 	var metrics Metrics
 	t := t0
@@ -112,5 +97,9 @@ func simulatedAnaelling(board []int, t0 float64, TMin float64, alpha float64) ([
 }
 
 func main() {
-	benchmark()
+	// se quiser rodar os testes, descomente a linha abaixo (e comente a de run)
+	// benchmark()
+
+	// debug (= true) mostra até n > 8 para nao quebrar as linhas no terminal; Se quiser aumentar o limite mude a condicao na funcao 'run'
+	run(8, 5, TMin, 0.9995, true)
 }
