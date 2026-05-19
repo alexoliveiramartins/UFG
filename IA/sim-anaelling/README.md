@@ -3,6 +3,7 @@
 Esse trabalho foi feito para a matéria de IA para ilustrar a otimização do algoritmo de Simulated Anaelling no problema das N rainhas.
 
 > Para rodar o programa basta ter o go instalado na versão `>1.25.9` usar o comando `go run .` (para rodar sem criar o binário)
+> Na main, escolha se quer rodar o run (padrao) para visualizar o algoritmo ou o benchmark (descomente a linha e comente a do run)
 
 Abaixo está o relatório do trabalho em markdown (original em LaTeX na raíz).
 
