@@ -1,0 +1,321 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[brazil]{babel}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{tikz}
+\usepackage{float}
+
+\usetikzlibrary{arrows.meta, positioning}
+
+\geometry{margin=2.5cm}
+
+\definecolor{casaClara}{HTML}{F1DFC5}
+\definecolor{casaEscura}{HTML}{6D8F9C}
+\definecolor{texto}{HTML}{253238}
+\definecolor{destaque}{HTML}{D85C47}
+\definecolor{azul}{HTML}{3379A8}
+
+\tikzset{
+    rainha/.style={
+        circle,
+        fill=texto,
+        text=white,
+        minimum size=0.72cm,
+        inner sep=0pt,
+        font=\bfseries
+    },
+    seta/.style={
+        -{Latex[length=3mm]},
+        line width=0.8pt,
+        draw=texto
+    },
+    troca/.style={
+        -{Latex[length=3mm]},
+        line width=1.1pt,
+        draw=azul
+    },
+    conflito/.style={
+        draw=destaque,
+        line width=1.4pt,
+        dashed
+    }
+}
+
+\newcommand{\desenharTabuleiro}{
+    \foreach \linha in {0,...,3} {
+        \foreach \coluna in {0,...,3} {
+            \pgfmathtruncatemacro{\cor}{mod(\linha+\coluna,2)}
+            \ifnum\cor=0
+                \fill[casaClara] (\coluna,-\linha) rectangle ++(1,-1);
+            \else
+                \fill[casaEscura] (\coluna,-\linha) rectangle ++(1,-1);
+            \fi
+        }
+    }
+    \draw[texto, line width=0.7pt] (0,0) rectangle (4,-4);
+    \foreach \i in {1,2,3} {
+        \draw[black!20] (\i,0) -- (\i,-4);
+        \draw[black!20] (0,-\i) -- (4,-\i);
+    }
+}
+
+\newcommand{\rainha}[2]{
+    \node[rainha] at ({#2+0.5},{-#1-0.5}) {Q};
+}
+
+\title{Simulated Annealing aplicado ao Problema das N-Rainhas}
+\author{}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Introdução}
+
+O problema das N-Rainhas consiste em posicionar $N$ rainhas em um tabuleiro $N \times N$ de forma que nenhuma rainha ataque outra. Como rainhas atacam na mesma linha, coluna e diagonais, uma solução válida deve evitar todos esses conflitos.
+
+Neste trabalho foi implementado o algoritmo Simulated Annealing para buscar soluções para o problema. A técnica é inspirada no processo de recozimento de metais, em que uma solução pode aceitar estados piores temporariamente para escapar de mínimos locais. Ao longo da execução, a temperatura diminui e o algoritmo passa a aceitar menos movimentos ruins.
+
+\section{Modelagem do Problema}
+
+A representação utilizada foi um vetor de inteiros. Cada posição do vetor representa uma linha do tabuleiro, e o valor armazenado representa a coluna onde a rainha daquela linha está posicionada. Por exemplo, em um tabuleiro $N = 4$, o vetor:
+
+\[
+[1, 3, 0, 2]
+\]
+
+representa rainhas nas posições $(0,1)$, $(1,3)$, $(2,0)$ e $(3,2)$.
+
+A solução inicial é gerada como uma permutação aleatória dos valores de $0$ até $N-1$. Assim, cada linha possui exatamente uma rainha e cada coluna também é usada uma única vez. Isso reduz bastante o espaço de busca, pois os principais conflitos restantes ocorrem nas diagonais.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+    \node[font=\Large\ttfamily, text=texto] (vetor) at (0,0) {[1, 3, 0, 2]};
+    \node[below=0.25cm of vetor, align=center, text=texto] {
+        índice = linha\\
+        valor = coluna
+    };
+
+    \draw[seta] (2.1,0) -- (4.2,0);
+
+    \begin{scope}[shift={(4.8,1.8)}]
+        \desenharTabuleiro
+        \rainha{0}{1}
+        \rainha{1}{3}
+        \rainha{2}{0}
+        \rainha{3}{2}
+
+        \foreach \linha in {0,...,3} {
+            \node[left, font=\small, text=texto] at (-0.15,{-\linha-0.5}) {\linha};
+        }
+        \foreach \coluna in {0,...,3} {
+            \node[below, font=\small, text=texto] at ({\coluna+0.5},-4.15) {\coluna};
+        }
+        \node[font=\small, text=texto] at (2,-4.75) {colunas};
+        \node[font=\small, rotate=90, text=texto] at (-0.75,-2) {linhas};
+    \end{scope}
+\end{tikzpicture}
+\caption{Representação do estado por vetor.}
+\end{figure}
+
+\section{Função de Custo}
+
+A função de custo mede a quantidade de conflitos entre rainhas. O objetivo do algoritmo é minimizar essa função até chegar ao valor zero.
+
+No código, são verificados:
+
+\begin{itemize}
+    \item conflitos nas diagonais;
+    \item conflitos de coluna, como verificação adicional.
+\end{itemize}
+
+Quanto menor o número de conflitos, melhor é a solução. Uma solução com custo igual a zero é uma solução válida para o problema.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+    \node[font=\Large\ttfamily, text=texto] at (0,0) {[0, 1, 3, 2]};
+    \node[text=texto] at (0,-0.65) {estado com conflitos};
+
+    \draw[seta] (1.9,0) -- (3.8,0);
+
+    \begin{scope}[shift={(4.4,1.8)}]
+        \desenharTabuleiro
+
+        \draw[conflito] (0.5,-0.5) -- (1.5,-1.5);
+        \draw[conflito] (3.5,-2.5) -- (2.5,-3.5);
+
+        \rainha{0}{0}
+        \rainha{1}{1}
+        \rainha{2}{3}
+        \rainha{3}{2}
+    \end{scope}
+
+    \node[
+        draw=destaque,
+        fill=destaque!12,
+        rounded corners,
+        inner sep=7pt,
+        text=texto
+    ] at (6.4,-3.2) {custo = 2 conflitos diagonais};
+\end{tikzpicture}
+\caption{Exemplo visual da função de custo contando pares de rainhas em conflito.}
+\end{figure}
+
+\section{Geração de Vizinhos}
+
+A estratégia de vizinhança utilizada consiste em escolher duas linhas aleatórias e trocar as colunas das rainhas dessas linhas. Como o tabuleiro é representado por uma permutação, essa troca mantém uma rainha por linha e preserva o uso das colunas.
+
+Essa vizinhança é simples, mas adequada para o problema, pois modifica parcialmente o estado atual sem reconstruir todo o tabuleiro.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}
+    \begin{scope}[font=\Large\ttfamily, text=texto]
+        \node at (-1.20,0) {[};
+        \node at (-0.90,0) {1};
+        \node at (-0.60,0) {,};
+        \node[draw=azul, rounded corners, line width=0.9pt, inner sep=2.5pt] at (-0.30,0) {3};
+        \node at (0.00,0) {,};
+        \node[draw=azul, rounded corners, line width=0.9pt, inner sep=2.5pt] at (0.30,0) {0};
+        \node at (0.60,0) {,};
+        \node at (0.90,0) {2};
+        \node at (1.20,0) {]};
+
+        \node at (5.80,0) {[};
+        \node at (6.10,0) {1};
+        \node at (6.40,0) {,};
+        \node[draw=azul, rounded corners, line width=0.9pt, inner sep=2.5pt] at (6.70,0) {0};
+        \node at (7.00,0) {,};
+        \node[draw=azul, rounded corners, line width=0.9pt, inner sep=2.5pt] at (7.30,0) {3};
+        \node at (7.60,0) {,};
+        \node at (7.90,0) {2};
+        \node at (8.20,0) {]};
+    \end{scope}
+
+    \draw[troca] (1.55,0.15) .. controls (3.2,1.0) and (4.0,1.0) .. (5.45,0.15);
+    \node[font=\small, text=texto] at (3.55,1.25) {troca das linhas 1 e 2};
+
+    \node[text=texto] at (0,-1.0) {estado atual};
+    \node[text=texto] at (7,-1.0) {vizinho gerado};
+
+    \begin{scope}[shift={(-0.6,-1.8)}, scale=0.75]
+        \desenharTabuleiro
+        \rainha{0}{1}
+        \rainha{1}{3}
+        \rainha{2}{0}
+        \rainha{3}{2}
+    \end{scope}
+
+    \draw[seta] (3.1,-3.3) -- (4.35,-3.3);
+
+    \begin{scope}[shift={(4.8,-1.8)}, scale=0.75]
+        \desenharTabuleiro
+        \rainha{0}{1}
+        \rainha{1}{0}
+        \rainha{2}{3}
+        \rainha{3}{2}
+    \end{scope}
+\end{tikzpicture}
+\caption{Geração de vizinho pela troca de duas posições do vetor.}
+\end{figure}
+
+\section{Simulated Annealing}
+
+O algoritmo inicia com uma solução aleatória e uma temperatura inicial $T_0$. A cada iteração, é gerado um vizinho e comparado seu custo com o custo da solução atual.
+
+Se o vizinho for melhor, ele é aceito. Se for pior, ainda pode ser aceito com probabilidade:
+
+\[
+P = e^{-\Delta E / T}
+\]
+
+onde $\Delta E$ é a diferença entre o custo do vizinho e o custo atual, e $T$ é a temperatura corrente.
+
+Após cada iteração, a temperatura é reduzida por resfriamento geométrico:
+
+\[
+T = T \cdot \alpha
+\]
+
+Os critérios de parada utilizados foram:
+
+\begin{itemize}
+    \item encontrar uma solução com custo zero;
+    \item temperatura menor que $T_{min}$;
+    \item atingir o limite máximo de iterações.
+\end{itemize}
+
+Na implementação, foram usados $T_{min} = 0{,}0001$ e limite máximo de $100000$ iterações.
+
+\section{Experimentos}
+
+Foram realizados experimentos com os valores de $N$ sugeridos na especificação: $8$, $16$, $32$ e $128$. Para cada valor de $N$, foram testadas três combinações de temperatura inicial e taxa de resfriamento. Cada combinação foi executada três vezes, e a tabela apresenta as médias obtidas.
+
+\begin{center}
+\begin{tabular}{ccccc}
+\toprule
+$N$ & $T_0$ & $\alpha$ & Conflitos médios & Iterações médias \\
+\midrule
+8   & 20 & 0{,}9995 & 0{,}000000  & 340{,}333333 \\
+8   & 5  & 0{,}9500 & 1{,}000000  & 211{,}000000 \\
+8   & 1  & 0{,}9000 & 0{,}333333  & 58{,}333333 \\
+\midrule
+16  & 20 & 0{,}9995 & 0{,}000000  & 7081{,}666667 \\
+16  & 5  & 0{,}9500 & 0{,}666667  & 210{,}000000 \\
+16  & 1  & 0{,}9000 & 1{,}666667  & 88{,}000000 \\
+\midrule
+32  & 20 & 0{,}9995 & 0{,}000000  & 10436{,}333333 \\
+32  & 5  & 0{,}9500 & 2{,}666667  & 211{,}000000 \\
+32  & 1  & 0{,}9000 & 5{,}333333  & 88{,}000000 \\
+\midrule
+128 & 20 & 0{,}9995 & 0{,}000000  & 15422{,}000000 \\
+128 & 5  & 0{,}9500 & 32{,}000000 & 211{,}000000 \\
+128 & 1  & 0{,}9000 & 45{,}333333 & 88{,}000000 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tabular}{cccc}
+\toprule
+$N$ & $T_0$ & $\alpha$ & Tempo médio \\
+\midrule
+8   & 20 & 0{,}9995 & 159{,}224 $\mu$s \\
+8   & 5  & 0{,}9500 & 89{,}444 $\mu$s \\
+8   & 1  & 0{,}9000 & 27{,}618 $\mu$s \\
+16  & 20 & 0{,}9995 & 4{,}305241 ms \\
+16  & 5  & 0{,}9500 & 120{,}495 $\mu$s \\
+16  & 1  & 0{,}9000 & 44{,}563 $\mu$s \\
+32  & 20 & 0{,}9995 & 17{,}476301 ms \\
+32  & 5  & 0{,}9500 & 330{,}651 $\mu$s \\
+32  & 1  & 0{,}9000 & 136{,}746 $\mu$s \\
+128 & 20 & 0{,}9995 & 387{,}604950 ms \\
+128 & 5  & 0{,}9500 & 5{,}155863 ms \\
+128 & 1  & 0{,}9000 & 2{,}108906 ms \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Análise dos Resultados}
+
+Os resultados mostram que a combinação $T_0 = 20$ e $\alpha = 0{,}9995$ foi a mais consistente. Ela encontrou soluções com zero conflitos para todos os valores de $N$ testados. Isso ocorreu porque a temperatura inicial maior e o resfriamento mais lento permitiram ao algoritmo explorar melhor o espaço de busca antes de se tornar mais restritivo.
+
+As combinações com $T_0 = 5$, $\alpha = 0{,}95$ e $T_0 = 1$, $\alpha = 0{,}9$ foram mais rápidas, mas apresentaram mais conflitos, principalmente para $N = 32$ e $N = 128$. Isso indica que o resfriamento mais rápido reduz o tempo de execução, porém aumenta a chance de o algoritmo parar em uma solução ainda não ideal.
+
+Também é possível perceber que, conforme $N$ aumenta, o tempo de execução cresce. Isso acontece porque a função de custo compara pares de rainhas para detectar conflitos, o que torna cada avaliação mais cara em tabuleiros maiores.
+
+\section{Conclusão}
+
+A implementação conseguiu aplicar o Simulated Annealing ao problema das N-Rainhas e produzir soluções válidas nos principais testes. O experimento mostrou a importância da escolha dos parâmetros: temperaturas maiores e resfriamento mais lento tendem a melhorar a qualidade da solução, enquanto temperaturas menores e resfriamento rápido reduzem o tempo, mas podem deixar conflitos no tabuleiro.
+
+Assim, o trabalho confirma que o Simulated Annealing é uma abordagem adequada para problemas de busca heurística, especialmente quando é necessário escapar de mínimos locais e explorar um espaço de soluções muito grande.
+
+\end{document}
