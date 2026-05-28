@@ -1,10 +1,16 @@
+// da ultima atividade eu organizei o codigo
+// comentando algumas partes e ordenando
+// de forma mais organizada as funcoes,
+// alem de mudar o programa para usar matrizes
+// de rotacao, em vez de multiplicar os campos
+// do jeito que estava antes, como o professor
+// sugeriu
+
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const fileInput = document.getElementById("fileInput");
 const helpEl = document.getElementById("help");
 const projecaoEl = document.getElementById("projecao");
-
-// deixa as coordenadas (0,0) em baixo na esquerda
 // ctx.translate(0, canvas.height);
 // ctx.scale(1, -1);
 
@@ -13,153 +19,188 @@ const ROTATE_STEP = 5;
 const SCALE_STEP = 0.1;
 const CAVALIER_ANGLE = Math.PI / 4;
 const CAVALIER_FACTOR = 0.5;
-let projecao_atual = 0
 
 let objeto = criarCubo();
-let backup = objeto
 
-const obliquaCavaleira = ([x, y, z]) => {
-  x = x + z * Math.cos(grausParaRad(45))
-  y = y + z * Math.cos(grausParaRad(45))
-  return {x, y}
-}
+// ====== matrizes de transformacao/projecao/perspectiva
 
-const paralelaObliquaCabinet = ([x, y, z]) => {
-  const L = 0.5
-  x = x + z * L * Math.cos(grausParaRad(45))
-  y = y + z * L * Math.sin(grausParaRad(45))
-  return {x, y}
-}
+const escala = (sX, sY, sZ) => {
+  return [
+    [sX, 0, 0, 0],
+    [0, sY, 0, 0],
+    [0, 0, sZ, 0],
+    [0, 0, 0, 1],
+  ];
+};
 
-const ortograficaIsometrica = ([x, y, z]) => {
-  x = (x-z) * Math.cos(grausParaRad(30))
-  y = y + (x + z) * Math.sin(grausParaRad(30))
-  return {x, y}
-}
+const translacao = (tX, tY, tZ) => {
+  return [
+    [1, 0, 0, tX],
+    [0, 1, 0, tY],
+    [0, 0, 1, tZ],
+    [0, 0, 0, 1],
+  ];
+};
 
-// inverter y?
-const pontoFugaZ = ([x, y, z]) => {
-  const d = 500 // mudar dps
-  x = x / (1 + z / d)
-  y = y / (1 + z / d)
-  return {x, y}
-}
+const rotacaoZ = (rZ) => {
+  const cos = Math.cos(grausParaRad(rZ));
+  const sin = Math.sin(grausParaRad(rZ));
+  return [
+    [cos, -sin, 0, 0],
+    [sin, cos, 0, 0],
+    [0, 0, 1, 0],
+    [0, 0, 0, 1],
+  ];
+};
 
-const pontoFugaXZ = ([x, y, z]) => {
-  const dX = 500
-  const dZ = 500
-  fator_x = dX / (dX + x) 
-  fator_z = dZ / (dZ + z)
+const rotacaoX = (rX) => {
+  const cos = Math.cos(grausParaRad(rX));
+  const sin = Math.sin(grausParaRad(rX));
+  return [
+    [1, 0, 0, 0],
+    [0, cos, -sin, 0],
+    [0, sin, cos, 0],
+    [0, 0, 0, 1],
+  ];
+};
 
-  x = x * fator_z
-  y = y * fator_x * fator_z
-  return {x, y}
-}
+const rotacaoY = (rY) => {
+  const cos = Math.cos(grausParaRad(rY));
+  const sin = Math.sin(grausParaRad(rY));
+  return [
+    [cos, 0, sin, 0],
+    [0, 1, 0, 0],
+    [-sin, 0, cos, 0],
+    [0, 0, 0, 1],
+  ];
+};
 
-const cavaleira = ([x, y, z]) => {
-  x = x + CAVALIER_FACTOR * z * Math.cos(CAVALIER_ANGLE)
-  y = y + CAVALIER_FACTOR * z * Math.sin(CAVALIER_ANGLE)
-  return {x, y}
-}
+const obliquaCavaleira = (x, y, z) => {
+  const theta = grausParaRad(45);
+  const cos = Math.cos(theta);
+  const sin = Math.sin(theta);
+  return [
+    [1, 0, cos, 0],
+    [0, 1, sin, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 1],
+  ];
+};
 
+const paralelaObliquaCabinet = (x, y, z) => {
+  const theta = grausParaRad(45);
+  const cos = 0.5 * Math.cos(theta);
+  const sin = 0.5 * Math.sin(theta);
+  return [
+    [1, 0, cos, 0],
+    [0, 1, sin, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 1],
+  ];
+};
+
+const ortograficaIsometrica = (x, y, z) => {
+  const umRaizDois = 1 / Math.sqrt(2);
+  const umRaizSeis = 1 / Math.sqrt(6);
+  const doisRaizSeis = 2 / Math.sqrt(6);
+  return [
+    [umRaizDois, 0, -umRaizDois, 0],
+    [umRaizSeis, doisRaizSeis, umRaizSeis, 0],
+    [0, 0, 0, 0],
+    [0, 0, 0, 1],
+  ];
+};
+
+const pontoFugaZ = (x, y, z) => {
+  const d = 500;
+  return [
+    [d, 0, 0, 0],
+    [0, d, 0, 0],
+    [0, 0, 0, 0],
+    [0, 0, 1, d],
+  ];
+};
+
+const pontoFugaXZ = (x, y, z) => {
+  const dx = 500;
+  const dz = 500;
+  return [
+    [1, 0, 0, 0],
+    [0, 1, 0, 0],
+    [0, 0, 0, 0],
+    [1 / dx, 0, 1 / dz, 1],
+  ];
+};
+
+let projecao_atual = 0;
 const projecoes = [
-  cavaleira,
   obliquaCavaleira,
   paralelaObliquaCabinet,
   ortograficaIsometrica,
   pontoFugaZ,
   pontoFugaXZ,
-]
+];
 
-function criarObjeto3D(pontos, linhas) {
-  return {
-    n: pontos.length,
-    m: linhas.length,
-    pontos,
-    linhas,
-    Tx: 0,
-    Ty: 0,
-    Tz: 0,
-    Rx: 0,
-    Ry: 0,
-    Rz: 0,
-    Sx: 1,
-    Sy: 1,
-    Sz: 1,
-  };
-}
-
-function criarCubo() {
-  const s = 80;
-  return criarObjeto3D(
-    [ // ponto
-      [-s, -s, -s],
-      [s, -s, -s],
-      [s, s, -s],
-      [-s, s, -s],
-      [-s, -s, s],
-      [s, -s, s],
-      [s, s, s],
-      [-s, s, s],
-    ],
-    [ // linhas
-      [0, 1],
-      [1, 2],
-      [2, 3],
-      [3, 0],
-      [4, 5],
-      [5, 6],
-      [6, 7],
-      [7, 4],
-      [0, 4],
-      [1, 5],
-      [2, 6],
-      [3, 7],
-    ],
-  );
-}
-
-// console.log(objeto.pontos)
-
-function grausParaRad(graus) {
-  return (graus * Math.PI) / 180;
-}
+// ====== funcoes de desenho na tela ======
 
 function aplicarTransformacoes([x, y, z], obj) {
-  x *= obj.Sx;
-  y *= obj.Sy;
-  z *= obj.Sz;
+  let pontoHomogeneo = [[x], [y], [z], [1]];
 
-  const rx = grausParaRad(obj.Rx);
-  let cos = Math.cos(rx);
-  let sin = Math.sin(rx);
-  [y, z] = [y * cos - z * sin, y * sin + z * cos];
+  // escala
+  pontoHomogeneo = multiplicarMatrizes(
+    escala(obj.Sx, obj.Sy, obj.Sz),
+    pontoHomogeneo,
+  );
 
-  const ry = grausParaRad(obj.Ry);
-  cos = Math.cos(ry);
-  sin = Math.sin(ry);
-  [x, z] = [x * cos + z * sin, -x * sin + z * cos];
+  // translacao
+  pontoHomogeneo = multiplicarMatrizes(
+    translacao(obj.Tx, obj.Ty, obj.Tz),
+    pontoHomogeneo,
+  );
 
-  const rz = grausParaRad(obj.Rz);
-  cos = Math.cos(rz);
-  sin = Math.sin(rz);
-  [x, y] = [x * cos - y * sin, x * sin + y * cos];
+  // rotacao
+  pontoHomogeneo = multiplicarMatrizes(rotacaoX(obj.Rx), pontoHomogeneo);
+  pontoHomogeneo = multiplicarMatrizes(rotacaoY(obj.Ry), pontoHomogeneo);
+  pontoHomogeneo = multiplicarMatrizes(rotacaoZ(obj.Rz), pontoHomogeneo);
 
-  return [x + obj.Tx, y + obj.Ty, z + obj.Tz];
+  return [
+    pontoHomogeneo[0][0], // x
+    pontoHomogeneo[1][0], // y
+    pontoHomogeneo[2][0], // z
+  ];
 }
 
-function projetarCavaleira([x, y, z]) {
+function aplicarProjecao([x, y, z], obj) {
+  let pontoHomogeneo = [[x], [y], [z], [1]];
+
+  pontoHomogeneo = multiplicarMatrizes(
+    projecoes[projecao_atual](x, y, z),
+    pontoHomogeneo,
+  );
+
+  const w = pontoHomogeneo[3][0];
   return {
-    x: x + CAVALIER_FACTOR * z * Math.cos(CAVALIER_ANGLE),
-    y: y + CAVALIER_FACTOR * z * Math.sin(CAVALIER_ANGLE),
+    x: pontoHomogeneo[0][0] / w, // x
+    y: pontoHomogeneo[1][0] / w, // y
   };
 }
 
-function paraTela(ponto, escala) {
-  return {
-    x: canvas.width / 2 + ponto.x * escala,
-    y: canvas.height / 2 - ponto.y * escala,
-  };
+function desenharObjeto() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  const transformados = objeto.pontos.map((p) =>
+    aplicarTransformacoes(p, objeto),
+  );
+  const projetados = transformados.map((p) => aplicarProjecao(p, objeto));
+  const escala = 1;
+  const pontosTela = projetados.map((p) => paraTela(p, escala));
+
+  ctx.fillStyle = "black";
+  for (const [a, b] of objeto.linhas) {
+    const p1 = pontosTela[a];
+    const p2 = pontosTela[b];
+    linhaDDA(p1.x, p1.y, p2.x, p2.y);
+  }
 }
 
 function linhaDDA(x1, y1, x2, y2) {
@@ -184,22 +225,10 @@ function linhaDDA(x1, y1, x2, y2) {
   }
 }
 
-function desenharObjeto() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+// ===== helpers/utils =====
 
-  const transformados = objeto.pontos.map((p) =>
-    aplicarTransformacoes(p, objeto),
-  );
-  const projetados = transformados.map((ponto) => projecoes[projecao_atual](ponto));
-  const escala = 1;
-  const pontosTela = projetados.map((p) => paraTela(p, escala));
-
-  ctx.fillStyle = "black";
-  for (const [a, b] of objeto.linhas) {
-    const p1 = pontosTela[a];
-    const p2 = pontosTela[b];
-    linhaDDA(p1.x, p1.y, p2.x, p2.y);
-  }
+function grausParaRad(graus) {
+  return (graus * Math.PI) / 180;
 }
 
 function mudarEscala(eixo, delta) {
@@ -207,88 +236,36 @@ function mudarEscala(eixo, delta) {
   objeto[campo] = Math.max(0.1, Number((objeto[campo] + delta).toFixed(1)));
 }
 
-function normalizarRotacoes() {
-  for (const campo of ["Rx", "Ry", "Rz"]) {
-    objeto[campo] = ((objeto[campo] % 360) + 360) % 360;
-  }
-}
-
-function aplicarComando(tecla) {
-  const comandos = {
-    a: () => (objeto.Tx -= TRANSLATE_STEP),
-    d: () => (objeto.Tx += TRANSLATE_STEP),
-    s: () => (objeto.Ty -= TRANSLATE_STEP),
-    w: () => (objeto.Ty += TRANSLATE_STEP),
-    q: () => (objeto.Tz -= TRANSLATE_STEP),
-    e: () => (objeto.Tz += TRANSLATE_STEP),
-    i: () => (objeto.Rx += ROTATE_STEP),
-    k: () => (objeto.Rx -= ROTATE_STEP),
-    j: () => (objeto.Ry -= ROTATE_STEP),
-    l: () => (objeto.Ry += ROTATE_STEP),
-    u: () => (objeto.Rz -= ROTATE_STEP),
-    o: () => (objeto.Rz += ROTATE_STEP),
-    v: () => mudarEscala("x", -SCALE_STEP),
-    b: () => mudarEscala("x", SCALE_STEP),
-    n: () => mudarEscala("y", -SCALE_STEP),
-    m: () => mudarEscala("y", SCALE_STEP),
-    x: () => mudarEscala("z", -SCALE_STEP),
-    c: () => mudarEscala("z", SCALE_STEP),
-    p: () => { 
-      projecao_atual = (projecao_atual + 1) % projecoes.length
-      alternarProjecao();
-    },
+// centraliza o desenho/ponto em relacao a tela
+function paraTela(ponto, escala) {
+  return {
+    x: canvas.width / 2 + ponto.x * escala,
+    y: canvas.height / 2 - ponto.y * escala,
   };
-
-  if (!comandos[tecla]) return false;
-  comandos[tecla]();
-  normalizarRotacoes();
-  desenharObjeto();
-  return true;
 }
 
-function changePerspective(){
-  objeto = backup
-  f = projecoes[projecao_atual]
-  projecao_atual = (projecao_atual + 1) % projecoes.length
-  objeto.pontos = objeto.pontos.map((ponto) => {
-      return f(ponto)
-  })
-}
+function multiplicarMatrizes(A, B) {
+  const linhasA = A.length;
+  const colunasA = A[0].length;
+  const colunasB = B[0].length;
 
-function alternarAjuda() {
-  if (helpEl.textContent) {
-    helpEl.textContent = "";
-    return;
+  const resultado = [];
+
+  for (let i = 0; i < linhasA; i++) {
+    resultado[i] = [];
+
+    for (let j = 0; j < colunasB; j++) {
+      let soma = 0;
+
+      for (let k = 0; k < colunasA; k++) {
+        soma += A[i][k] * B[k][j];
+      }
+
+      resultado[i][j] = soma;
+    }
   }
 
-  helpEl.textContent =
-    "Translacao: A/D X, S/W Y, Q/E Z | Rotacao: K/I X, J/L Y, U/O Z | Escala: V/B X, N/M Y, X/C Z";
-}
-
-function alternarProjecao() {
-  let p = ""
-  switch(projecao_atual) {
-    case 0: 
-      p = "Cavaleira"
-      break
-    case 1: 
-      p = "Obliqua Cavaleira"
-      break
-    case 2: 
-      p = "Paralela Obliqua Cabinet"
-      break
-    case 3: 
-      p = "Ortografica Isometrica"
-      break
-    case 4: 
-      p = "Ponto Fuga Z"
-      break
-    case 5: 
-      p = "Ponto Fuga XZ"
-      break
-  }
-  projecaoEl.textContent =
-    `Projecao atual: ${p}`;
+  return resultado;
 }
 
 function parseObjeto3D(conteudo) {
@@ -341,6 +318,130 @@ function parseObjeto3D(conteudo) {
   return criarObjeto3D(pontos, ligacoes);
 }
 
+function criarObjeto3D(pontos, linhas) {
+  return {
+    n: pontos.length,
+    m: linhas.length,
+    pontos,
+    linhas,
+    Tx: 0, // translacao x, y, z
+    Ty: 0,
+    Tz: 0,
+    Rx: 0, // rotacao x, y, z
+    Ry: 0,
+    Rz: 0,
+    Sx: 1, // size(tamanho) x, y, z
+    Sy: 1,
+    Sz: 1,
+  };
+}
+
+function criarCubo() {
+  const s = 80;
+  return criarObjeto3D(
+    [
+      // ponto
+      [-s, -s, -s],
+      [s, -s, -s],
+      [s, s, -s],
+      [-s, s, -s],
+      [-s, -s, s],
+      [s, -s, s],
+      [s, s, s],
+      [-s, s, s],
+    ],
+    [
+      // linhas
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 0],
+      [4, 5],
+      [5, 6],
+      [6, 7],
+      [7, 4],
+      [0, 4],
+      [1, 5],
+      [2, 6],
+      [3, 7],
+    ],
+  );
+}
+
+// ===== mudancas no html
+
+// keybinds
+function aplicarComando(tecla) {
+  const comandos = {
+    a: () => (objeto.Tx -= TRANSLATE_STEP),
+    d: () => (objeto.Tx += TRANSLATE_STEP),
+    s: () => (objeto.Ty -= TRANSLATE_STEP),
+    w: () => (objeto.Ty += TRANSLATE_STEP),
+    q: () => (objeto.Tz -= TRANSLATE_STEP),
+    e: () => (objeto.Tz += TRANSLATE_STEP),
+    i: () => (objeto.Rx += ROTATE_STEP),
+    k: () => (objeto.Rx -= ROTATE_STEP),
+    j: () => (objeto.Ry -= ROTATE_STEP),
+    l: () => (objeto.Ry += ROTATE_STEP),
+    u: () => (objeto.Rz -= ROTATE_STEP),
+    o: () => (objeto.Rz += ROTATE_STEP),
+    v: () => mudarEscala("x", -SCALE_STEP),
+    b: () => mudarEscala("x", SCALE_STEP),
+    n: () => mudarEscala("y", -SCALE_STEP),
+    m: () => mudarEscala("y", SCALE_STEP),
+    x: () => mudarEscala("z", -SCALE_STEP),
+    c: () => mudarEscala("z", SCALE_STEP),
+    p: () => {
+      projecao_atual = (projecao_atual + 1) % projecoes.length;
+      alternarProjecao();
+    },
+  };
+  comandos[tecla]();
+  desenharObjeto();
+}
+
+function alternarAjuda() {
+  if (helpEl.textContent) {
+    helpEl.textContent = "";
+    return;
+  }
+
+  helpEl.textContent =
+    "Translacao: A/D X, S/W Y, Q/E Z | Rotacao: K/I X, J/L Y, U/O Z | Escala: V/B X, N/M Y, X/C Z";
+}
+
+function alternarProjecao() {
+  let p = "";
+  switch (projecao_atual) {
+    case 0:
+      p = "Obliqua Cavaleira";
+      break;
+    case 1:
+      p = "Paralela Obliqua Cabinet";
+      break;
+    case 2:
+      p = "Ortografica Isometrica";
+      break;
+    case 3:
+      p = "Ponto Fuga Z";
+      break;
+    case 4:
+      p = "Ponto Fuga XZ";
+      break;
+  }
+  projecaoEl.textContent = `Projecao atual: ${p}`;
+}
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "F1") {
+    event.preventDefault();
+    alternarAjuda();
+    return;
+  }
+
+  aplicarComando(event.key.toLowerCase());
+});
+
 fileInput.addEventListener("change", async (event) => {
   const arquivo = event.target.files[0];
   if (!arquivo) return;
@@ -350,18 +451,6 @@ fileInput.addEventListener("change", async (event) => {
     desenharObjeto();
   } catch (erro) {
     alert(`Nao foi possivel carregar o objeto: ${erro.message}`);
-  }
-});
-
-document.addEventListener("keydown", (event) => {
-  if (event.key === "F1") {
-    event.preventDefault();
-    alternarAjuda();
-    return;
-  }
-
-  if (aplicarComando(event.key.toLowerCase())) {
-    event.preventDefault();
   }
 });
 
