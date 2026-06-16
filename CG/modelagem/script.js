@@ -1,11 +1,3 @@
-// da ultima atividade eu organizei o codigo
-// comentando algumas partes e ordenando
-// de forma mais organizada as funcoes,
-// alem de mudar o programa para usar matrizes
-// de rotacao, em vez de multiplicar os campos
-// do jeito que estava antes, como o professor
-// sugeriu
-
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 const fileInput = document.getElementById("fileInput");
@@ -16,13 +8,13 @@ const projecaoEl = document.getElementById("projecao");
 
 const TRANSLATE_STEP = 10;
 const ROTATE_STEP = 5;
-const SCALE_STEP = 0.1;
+const SCALE_STEP = 0.5;
 const CAVALIER_ANGLE = Math.PI / 4;
 const CAVALIER_FACTOR = 0.5;
 
-let objetos = [criarCubo()]
-let objetoAtual = 0
-let numeroObjetos = 1
+let objetos = [criarCubo()];
+let objetoAtual = 0;
+let numeroObjetos = 1;
 
 // ====== matrizes de transformacao/projecao/perspectiva
 
@@ -187,12 +179,16 @@ function aplicarProjecao([x, y, z], obj) {
   };
 }
 
-function desenharTodos(){
+function desenharTodos() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  objetos.map((obj) => desenharObjeto(obj))
+  objetos.map((obj, i) => {
+    if (i == objetoAtual) {
+      desenharObjeto(obj, "red");
+    } else desenharObjeto(obj, "black");
+  });
 }
 
-function desenharObjeto(objeto) {
+function desenharObjeto(objeto, fill) {
   const transformados = objeto.pontos.map((p) =>
     aplicarTransformacoes(p, objeto),
   );
@@ -200,10 +196,30 @@ function desenharObjeto(objeto) {
   const escala = 1;
   const pontosTela = projetados.map((p) => paraTela(p, escala));
 
-  ctx.fillStyle = "black";
+  z_medio =
+    transformados.reduce((soma, ponto) => soma + ponto[2], 0) /
+    transformados.length;
+  objeto.z_medio = z_medio;
+
+  // para a proxima tarefa
+  // usar algoritmo do pintor em vez
+  // do de preencher poligonos antigo
+
+  // objeto.faces.forEach((linha) => {
+  //   const numPontos = linha[0];
+  //   const indicesPontos = linha.slice(1, numPontos + 1);
+  //   const rgb = linha.slice(numPontos + 1, numPontos + 4);
+
+  //   const coordenadas = indicesPontos.map((indice) => pontosTela[indice - 1]);
+
+  //   const rgbFace = `rgb(${rgb[0] * 255}, ${rgb[1] * 255}, ${rgb[2] * 255})`;
+  //   desenharPoligono(coordenadas, rgbFace);
+  // });
+
+  ctx.fillStyle = fill;
   for (const [a, b] of objeto.linhas) {
-    const p1 = pontosTela[a-1];
-    const p2 = pontosTela[b-1];
+    const p1 = pontosTela[a - 1];
+    const p2 = pontosTela[b - 1];
     linhaDDA(p1.x, p1.y, p2.x, p2.y);
   }
 }
@@ -230,7 +246,7 @@ function linhaDDA(x1, y1, x2, y2) {
   }
 }
 
-function desenharPoligono(pontos, corLinha, corPreenchimento) {
+function desenharPoligono(pontos, corPreenchimento) {
   const ys = pontos.map((p) => p.y);
   const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
 
@@ -250,13 +266,6 @@ function desenharPoligono(pontos, corLinha, corPreenchimento) {
     inter.sort((a, b) => a - b);
     for (let i = 0; i < inter.length; i += 2)
       linhaDDA(inter[i], y, inter[i + 1], y);
-  }
-
-  ctx.fillStyle = corLinha;
-  for (let i = 0; i < pontos.length; i++) {
-    const p1 = pontos[i],
-      p2 = pontos[(i + 1) % pontos.length];
-    linhaDDA(p1.x, p1.y, p2.x, p2.y);
   }
 }
 
@@ -303,124 +312,72 @@ function multiplicarMatrizes(A, B) {
   return resultado;
 }
 
-function parseObjeto3D(conteudo) {
-  const linhasTexto = conteudo
-    .split(/\r?\n/)
-    .map((linha) => linha.replace(/#.*/, "").trim())
-    .filter(Boolean);
-
-  if (linhasTexto.length === 0) throw new Error("Arquivo vazio.");
-
-  const [n, m] = linhasTexto[0].split(/\s+/).map(Number);
-  if (!Number.isInteger(n) || !Number.isInteger(m) || n <= 0 || m <= 0) {
-    throw new Error("A primeira linha deve conter n e m inteiros positivos.");
-  }
-
-  if (linhasTexto.length < 1 + n + m) {
-    throw new Error(
-      "Arquivo incompleto para a quantidade de pontos e linhas informada.",
-    );
-  }
-
-  const pontos = [];
-  for (let i = 0; i < n; i++) {
-    const ponto = linhasTexto[1 + i].split(/\s+/).map(Number);
-    if (ponto.length !== 3 || ponto.some((valor) => Number.isNaN(valor))) {
-      throw new Error(`Ponto invalido na linha ${i + 2}.`);
-    }
-    pontos.push(ponto);
-  }
-
-  let ligacoes = [];
-  for (let i = 0; i < m; i++) {
-    const linha = linhasTexto[1 + n + i].split(/\s+/).map(Number);
-    if (linha.length !== 2 || linha.some((valor) => !Number.isInteger(valor))) {
-      throw new Error(`Linha invalida na linha ${i + n + 2}.`);
-    }
-    ligacoes.push(linha);
-  }
-
-  const menorIndice = Math.min(...ligacoes.flat());
-  const maiorIndice = Math.max(...ligacoes.flat());
-  if (menorIndice === 1 && maiorIndice <= n) {
-    ligacoes = ligacoes.map(([a, b]) => [a - 1, b - 1]);
-  }
-
-  if (ligacoes.some(([a, b]) => a < 0 || b < 0 || a >= n || b >= n)) {
-    throw new Error("As linhas possuem indices fora da faixa de pontos.");
-  }
-
-  return criarObjeto3D(pontos, ligacoes);
-}
-
 function parseObjectsFile(conteudo) {
-  const linhas = conteudo.split(/\n/).map((l) => l.trim())
+  const linhas = conteudo.split(/\n/).map((l) => l.trim());
 
   if (linhas.length === 0) console.error("Arquivo vazio");
 
-  let objetos = []
-  const numObjetos = linhas[2]
-  numeroObjetos = numObjetos
+  let objetos = [];
+  const numObjetos = linhas[2];
+  numeroObjetos = numObjetos;
 
-  let offset = 3
-  for(let i = 0; i < numObjetos; i++){
-    offset++ // pula o nome
-    pontosObjeto = []
-    linhasObjeto = []
-    facesObjeto = []
+  let offset = 3;
+  for (let i = 0; i < numObjetos; i++) {
+    offset++; // pula o nome
+    pontosObjeto = [];
+    linhasObjeto = [];
+    facesObjeto = [];
 
     // 0 = pontos // 1 = linhas // 2 = faces
-    quantidades = linhas[offset].split(" ").map(Number) 
+    quantidades = linhas[offset].split(" ").map(Number);
     offset++;
 
-    for(let j = offset; j < offset + quantidades[0]; j++){
-      pontosObjeto.push(linhas[j].split(" ").map(Number))
+    for (let j = offset; j < offset + quantidades[0]; j++) {
+      pontosObjeto.push(linhas[j].split(" ").map(Number));
     }
-    offset += quantidades[0]
-    
-    for(let j = offset; j < offset + quantidades[1]; j++){
-      linhasObjeto.push(linhas[j].split(" ").map(Number))
-    }
-    offset += quantidades[1]
+    offset += quantidades[0];
 
-    for(let j = offset; j < offset + quantidades[2]; j++){
-      facesObjeto.push(linhas[j].split(" ").map(Number))
+    for (let j = offset; j < offset + quantidades[1]; j++) {
+      linhasObjeto.push(linhas[j].split(" ").map(Number));
     }
-    offset += quantidades[2]
+    offset += quantidades[1];
 
-    let transformacoes = []
-    for(let j = offset; j < offset + 3; j++){
-      transformacoes[j-offset] = linhas[j].split(" ").map(Number)
+    for (let j = offset; j < offset + quantidades[2]; j++) {
+      facesObjeto.push(linhas[j].split(" ").map(Number));
     }
-    offset += 3
+    offset += quantidades[2];
+
+    let transformacoes = [];
+    for (let j = offset; j < offset + 3; j++) {
+      transformacoes[j - offset] = linhas[j].split(" ").map(Number);
+    }
+    offset += 3;
 
     // console.log(pontosObjeto)
     // console.log(linhasObjeto)
-    // console.log(facesObjeto)
+    // console.log(facesObjeto);
     // console.log(transformacoes)
 
-    let obj = criarObjeto3D(pontosObjeto, linhasObjeto, facesObjeto)
-    obj.Rx = transformacoes[0][0]
-    obj.Ry = transformacoes[0][1]
-    obj.Rz = transformacoes[0][2]
-    
-    obj.Sx *= transformacoes[1][0]
-    obj.Sy *= transformacoes[1][1]
-    obj.Sz *= transformacoes[1][2]
+    let obj = criarObjeto3D(pontosObjeto, linhasObjeto, facesObjeto);
+    obj.Rx = transformacoes[0][0];
+    obj.Ry = transformacoes[0][1];
+    obj.Rz = transformacoes[0][2];
 
-    obj.Tx = transformacoes[2][0]
-    obj.Ty = transformacoes[2][1]
-    obj.Tz = transformacoes[2][2]
+    obj.Sx *= transformacoes[1][0];
+    obj.Sy *= transformacoes[1][1];
+    obj.Sz *= transformacoes[1][2];
 
-    objetos.push(obj)
+    obj.Tx = transformacoes[2][0];
+    obj.Ty = transformacoes[2][1];
+    obj.Tz = transformacoes[2][2];
+
+    objetos.push(obj);
   }
-  return objetos
+  return objetos;
 }
 
-function criarObjeto3D(
-  pontos, linhas, faces
-) {
-  return {
+function criarObjeto3D(pontos, linhas, faces) {
+  obj = {
     n: pontos.length,
     m: linhas.length,
     pontos,
@@ -436,6 +393,8 @@ function criarObjeto3D(
     Sy: 1,
     Sz: 1,
   };
+  obj.z_medio = 0;
+  return obj;
 }
 
 function criarCubo() {
@@ -467,6 +426,14 @@ function criarCubo() {
       [3, 7],
       [4, 8],
     ],
+    [
+      [4, 1, 2, 3, 4, 1, 1, 1],
+      [4, 5, 6, 7, 8, 1, 1, 1],
+      [4, 1, 5, 8, 4, 1, 1, 1],
+      [4, 2, 6, 7, 3, 1, 1, 1],
+      [4, 4, 3, 7, 8, 1, 1, 1],
+      [4, 1, 2, 6, 5, 1, 1, 1],
+    ],
   );
 }
 
@@ -474,7 +441,7 @@ function criarCubo() {
 
 // keybinds
 function aplicarComando(tecla) {
-  objeto = objetos[objetoAtual]
+  objeto = objetos[objetoAtual];
   const comandos = {
     a: () => (objeto.Tx -= TRANSLATE_STEP),
     d: () => (objeto.Tx += TRANSLATE_STEP),
@@ -500,7 +467,7 @@ function aplicarComando(tecla) {
     },
     tab: () => {
       objetoAtual = (objetoAtual + 1) % numeroObjetos;
-    }
+    },
   };
   comandos[tecla]();
   desenharTodos();
@@ -559,7 +526,6 @@ fileInput.addEventListener("change", async (event) => {
 
   try {
     objetos = parseObjectsFile(await arquivo.text());
-    console.log("Objetos: ", objetos)
     desenharTodos();
   } catch (erro) {
     alert(`Nao foi possivel carregar o objeto: ${erro.message}`);
