@@ -196,10 +196,8 @@ function desenharObjeto(objeto, fill) {
   const escala = 1;
   const pontosTela = projetados.map((p) => paraTela(p, escala));
 
-  z_medio =
-    transformados.reduce((soma, ponto) => soma + ponto[2], 0) /
-    transformados.length;
-  objeto.z_medio = z_medio;
+  calcularZmedio(obj, transformados);
+  console.log(objeto.zMedio)
 
   // para a proxima tarefa
   // usar algoritmo do pintor em vez
@@ -222,6 +220,7 @@ function desenharObjeto(objeto, fill) {
     const p2 = pontosTela[b - 1];
     linhaDDA(p1.x, p1.y, p2.x, p2.y);
   }
+  // console.log("Objeto: ", objeto)
 }
 
 function linhaDDA(x1, y1, x2, y2) {
@@ -270,6 +269,18 @@ function desenharPoligono(pontos, corPreenchimento) {
 }
 
 // ===== helpers/utils =====
+
+function calcularZmedio(obj, pontos){
+  obj.faces.forEach((face, i) => {
+    pontos_face = obj.faces[i].slice(1, obj.faces[i][0] + 1)
+    // console.log(`Pontos da face ${i}: ${pontos_face}`)
+    let soma_z = 0
+    pontos_face.map((ponto) => {
+      soma_z += pontos[ponto-1][2]
+    })
+    obj.zMedio[i] = soma_z / obj.faces[i][0]
+  })
+}
 
 function grausParaRad(graus) {
   return (graus * Math.PI) / 180;
@@ -327,6 +338,7 @@ function parseObjectsFile(conteudo) {
     pontosObjeto = [];
     linhasObjeto = [];
     facesObjeto = [];
+    let zMedio = [];
 
     // 0 = pontos // 1 = linhas // 2 = faces
     quantidades = linhas[offset].split(" ").map(Number);
@@ -343,7 +355,17 @@ function parseObjectsFile(conteudo) {
     offset += quantidades[1];
 
     for (let j = offset; j < offset + quantidades[2]; j++) {
-      facesObjeto.push(linhas[j].split(" ").map(Number));
+      let face = linhas[j].split(" ").map(Number)
+      let zs = face.slice(1, face[0]+1)
+      let sum = 0
+      zs.forEach(element => {
+        sum += pontosObjeto[element-1][2]
+      });
+
+      zMedio.push(sum/face[0])
+      facesObjeto.push(face);
+      // console.log("Faces: ", face)
+      // console.log("zmedio: ", zmedio)
     }
     offset += quantidades[2];
 
@@ -357,8 +379,9 @@ function parseObjectsFile(conteudo) {
     // console.log(linhasObjeto)
     // console.log(facesObjeto);
     // console.log(transformacoes)
+    // console.log(zMedio)
 
-    let obj = criarObjeto3D(pontosObjeto, linhasObjeto, facesObjeto);
+    let obj = criarObjeto3D(pontosObjeto, linhasObjeto, facesObjeto, zMedio);
     obj.Rx = transformacoes[0][0];
     obj.Ry = transformacoes[0][1];
     obj.Rz = transformacoes[0][2];
@@ -373,10 +396,12 @@ function parseObjectsFile(conteudo) {
 
     objetos.push(obj);
   }
+  // console.log(objetos)
+
   return objetos;
 }
 
-function criarObjeto3D(pontos, linhas, faces) {
+function criarObjeto3D(pontos, linhas, faces, z_medio) {
   obj = {
     n: pontos.length,
     m: linhas.length,
@@ -392,8 +417,8 @@ function criarObjeto3D(pontos, linhas, faces) {
     Sx: 1, // size(tamanho) x, y, z
     Sy: 1,
     Sz: 1,
+    zMedio: z_medio
   };
-  obj.z_medio = 0;
   return obj;
 }
 
@@ -434,6 +459,7 @@ function criarCubo() {
       [4, 4, 3, 7, 8, 1, 1, 1],
       [4, 1, 2, 6, 5, 1, 1, 1],
     ],
+    [0,0,0]
   );
 }
 
@@ -469,8 +495,10 @@ function aplicarComando(tecla) {
       objetoAtual = (objetoAtual + 1) % numeroObjetos;
     },
   };
-  comandos[tecla]();
-  desenharTodos();
+  if(comandos[tecla]){
+    comandos[tecla]();
+    desenharTodos();
+  }
 }
 
 function alternarAjuda() {
