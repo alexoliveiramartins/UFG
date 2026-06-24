@@ -3,6 +3,7 @@ const ctx = canvas.getContext("2d");
 const fileInput = document.getElementById("fileInput");
 const helpEl = document.getElementById("help");
 const projecaoEl = document.getElementById("projecao");
+const destaqueCheckboxEl = document.getElementById("destaque");
 // ctx.translate(0, canvas.height);
 // ctx.scale(1, -1);
 
@@ -15,6 +16,7 @@ const CAVALIER_FACTOR = 0.5;
 let objetos = [criarCubo()];
 let objetoAtual = 0;
 let numeroObjetos = 1;
+let destacarSelecionado = true;
 
 // vetor observacao para comparar com a normal
 const observacao = [
@@ -24,6 +26,16 @@ const observacao = [
   [0, 0, -1],
   [-1, 0, -1],
 ];
+
+// posicao do observador
+const observadores = [
+  [0, 0, 0],        // cavaleira
+  [0, 0, 0],        // cabinet
+  [0, 0, 0],        // isometrica
+  [0, 0, -500],     // pontoFugaZ
+  [-500, 0, -500],  // pontoFugaXZ
+];
+
 // ====== matrizes de transformacao/projecao/perspectiva
 
 const escala = (sX, sY, sZ) => {
@@ -145,6 +157,8 @@ const projecoes = [
 
 // ====== funcoes de desenho na tela ======
 
+// aplica as transformacoes multiplicando
+// o ponto pelas matrizes de transformacao
 function aplicarTransformacoes([x, y, z], obj) {
   let pontoHomogeneo = [[x], [y], [z], [1]];
 
@@ -154,16 +168,16 @@ function aplicarTransformacoes([x, y, z], obj) {
     pontoHomogeneo,
   );
 
+  // rotacao
+  pontoHomogeneo = multiplicarMatrizes(rotacaoX(obj.Rx), pontoHomogeneo);
+  pontoHomogeneo = multiplicarMatrizes(rotacaoY(obj.Ry), pontoHomogeneo);
+  pontoHomogeneo = multiplicarMatrizes(rotacaoZ(obj.Rz), pontoHomogeneo);
+
   // translacao
   pontoHomogeneo = multiplicarMatrizes(
     translacao(obj.Tx, obj.Ty, obj.Tz),
     pontoHomogeneo,
   );
-
-  // rotacao
-  pontoHomogeneo = multiplicarMatrizes(rotacaoX(obj.Rx), pontoHomogeneo);
-  pontoHomogeneo = multiplicarMatrizes(rotacaoY(obj.Ry), pontoHomogeneo);
-  pontoHomogeneo = multiplicarMatrizes(rotacaoZ(obj.Rz), pontoHomogeneo);
 
   return [
     pontoHomogeneo[0][0], // x
@@ -172,6 +186,8 @@ function aplicarTransformacoes([x, y, z], obj) {
   ];
 }
 
+// aplica projecao multiplicando a matriz do ponto
+// pela matriz da projecao/perspectiva
 function aplicarProjecao([x, y, z], obj) {
   let pontoHomogeneo = [[x], [y], [z], [1]];
 
@@ -187,15 +203,17 @@ function aplicarProjecao([x, y, z], obj) {
   };
 }
 
+// desenha todos os objetos carregados
 function desenharTodos() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   objetos.map((obj, i) => {
-    if (i == objetoAtual) {
+    if (i == objetoAtual && destacarSelecionado == true) {
       desenharObjeto(obj, "red");
     } else desenharObjeto(obj, "nenhum");
   });
 }
 
+// desenha o objeto e aplica as transformacoes
 function desenharObjeto(objeto, fill) {
   const transformados = objeto.pontos.map((p) =>
     aplicarTransformacoes(p, objeto),
@@ -206,21 +224,20 @@ function desenharObjeto(objeto, fill) {
 
   calcularZmedio(objeto, transformados);
   calcularNormal(objeto, transformados);
+  calcularDistanciaFace(objeto, transformados);
 
-  const faces_z = objeto.faces
-    .filter((f) => {
-      const vetorObservacao = observacao[projecao_atual]
-      // const normal = multiplicarMatrizes(f.normal, projecoes[projecao_atual])
-      const normal = f.normal;
-      const dot =
-        normal[0] * vetorObservacao[0] +
-        normal[1] * vetorObservacao[1] +
-        normal[2] * vetorObservacao[2];
-        
-      return dot <= 0;
-    })
-    .sort((a, b) => a.zMedio - b.zMedio);
-
+  const faces_z = [...objeto.faces]
+  .filter((f) => {  // filtra as faces visiveis usando a normal 
+    const vetorObservacao = observacao[projecao_atual];
+    const normal = f.normal;
+    const dot =
+      normal[0] * vetorObservacao[0] +
+      normal[1] * vetorObservacao[1] +
+      normal[2] * vetorObservacao[2];
+    return dot <= 0;
+  })
+  .sort((a, b) => b.distancia - a.distancia); // ordena pela distancia da face ate o observador
+  
   faces_z.forEach((face) => {
     const coordenadas = face.indicesPontos.map(
       (indice) => pontosTela[indice - 1],
@@ -237,9 +254,10 @@ function desenharObjeto(objeto, fill) {
       linhaDDA(p1.x, p1.y, p2.x, p2.y);
     }
   }
-  console.log("Objeto: ", objeto);
+  // console.log("Objeto: ", objeto);
 }
 
+// funcao de linha
 function linhaDDA(x1, y1, x2, y2) {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -262,6 +280,8 @@ function linhaDDA(x1, y1, x2, y2) {
   }
 }
 
+// funcao de preenchimento da face 
+// (mesma da tarefa de desenho de poligonos)
 function desenharPoligono(pontos, corPreenchimento) {
   const ys = pontos.map((p) => p.y);
   const [minY, maxY] = [Math.min(...ys), Math.max(...ys)];
@@ -294,6 +314,45 @@ function calcularZmedio(obj, pontos) {
       0,
     );
     face.zMedio = sum / face.numPontos;
+  });
+}
+
+// calcula a distancia da face ao observador
+// Em projecoes usa a profundidade do
+// centroide da face na direcao do vetor do observador 
+// Nas perspectivas (Z, ZX) utiliza a distancia do centroide da face ate
+// a posicao do observador
+function calcularDistanciaFace(obj, pontos) {
+  obj.faces.forEach((face) => {
+    let sum_x = 0;
+    let sum_y = 0;
+    let sum_z = 0;
+    face.indicesPontos.forEach(i => {
+      sum_x += pontos[i - 1][0];
+      sum_y += pontos[i - 1][1];
+      sum_z += pontos[i - 1][2];
+    });
+
+    let centroide = [
+      sum_x / face.numPontos,
+      sum_y / face.numPontos,
+      sum_z / face.numPontos,
+    ];
+
+    if (projecao_atual === 3 || projecao_atual === 4) {
+      const dx = centroide[0] - observadores[projecao_atual][0];
+      const dy = centroide[1] - observadores[projecao_atual][1];
+      const dz = centroide[2] - observadores[projecao_atual][2];
+
+      face.distancia = dx * dx + dy * dy + dz * dz;
+    } else {
+      const direcao = observacao[projecao_atual];
+
+      face.distancia =
+        centroide[0] * direcao[0] +
+        centroide[1] * direcao[1] +
+        centroide[2] * direcao[2];
+    }
   });
 }
 
@@ -358,6 +417,7 @@ function multiplicarMatrizes(A, B) {
   return resultado;
 }
 
+// faz parse do figure.dat
 function parseObjectsFile(conteudo) {
   const linhas = conteudo.split(/\n/).map((l) => l.trim());
 
@@ -439,7 +499,6 @@ function parseObjectsFile(conteudo) {
 
     objetos.push(obj);
   }
-  console.log(objetos);
 
   return objetos;
 }
@@ -603,6 +662,15 @@ document.addEventListener("keydown", (event) => {
 
   aplicarComando(event.key.toLowerCase());
 });
+
+destaqueCheckboxEl.addEventListener("change", e => {
+  if(e.target.checked) {
+    destacarSelecionado = true
+  } else {
+    destacarSelecionado = false
+  }
+  desenharTodos()
+})
 
 fileInput.addEventListener("change", async (event) => {
   const arquivo = event.target.files[0];
