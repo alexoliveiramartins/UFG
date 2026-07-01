@@ -14,6 +14,7 @@ const CAVALIER_ANGLE = Math.PI / 4;
 const CAVALIER_FACTOR = 0.5;
 
 let objetos = [criarCubo()];
+let facesGlobal = [];
 let objetoAtual = 0;
 let numeroObjetos = 1;
 let destacarSelecionado = true;
@@ -206,11 +207,29 @@ function aplicarProjecao([x, y, z], obj) {
 // desenha todos os objetos carregados
 function desenharTodos() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  let selecionado = null
+  facesGlobal = []
+
   objetos.map((obj, i) => {
     if (i == objetoAtual && destacarSelecionado == true) {
-      desenharObjeto(obj, "red");
+      selecionado = obj;
+      selecionado.pontosTela = desenharObjeto(obj, "red");
     } else desenharObjeto(obj, "nenhum");
   });
+  
+  facesGlobal = [...facesGlobal].sort((a, b) => b[0] - a[0]);
+  facesGlobal.forEach((f) => {
+    desenharPoligono(f[1], f[2]);
+  })
+
+  if(selecionado != null) {
+    ctx.fillStyle = "red";
+    for (const [a, b] of selecionado.linhas) {
+      const p1 = selecionado.pontosTela[a - 1];
+      const p2 = selecionado.pontosTela[b - 1];
+      linhaDDA(p1.x, p1.y, p2.x, p2.y);
+    }
+  }
 }
 
 // desenha o objeto e aplica as transformacoes
@@ -227,13 +246,16 @@ function desenharObjeto(objeto, fill) {
   calcularDistanciaFace(objeto, transformados);
 
   const faces_z = [...objeto.faces]
-  .filter((f) => {  // filtra as faces visiveis usando a normal 
+  .filter((f) => {
     const vetorObservacao = observacao[projecao_atual];
     const normal = f.normal;
     const dot =
       normal[0] * vetorObservacao[0] +
       normal[1] * vetorObservacao[1] +
       normal[2] * vetorObservacao[2];
+    if (projecao_atual === 3 || projecao_atual === 4) {
+      return dot >= 0;
+    }
     return dot <= 0;
   })
   .sort((a, b) => b.distancia - a.distancia); // ordena pela distancia da face ate o observador
@@ -242,19 +264,11 @@ function desenharObjeto(objeto, fill) {
     const coordenadas = face.indicesPontos.map(
       (indice) => pontosTela[indice - 1],
     );
-
-    desenharPoligono(coordenadas, face.rgbFace);
+    // desenharPoligono(coordenadas, face.rgbFace);
+    facesGlobal.push([face.distancia, coordenadas, face.rgbFace]);
   });
-
-  if (fill !== "nenhum") {
-    ctx.fillStyle = fill;
-    for (const [a, b] of objeto.linhas) {
-      const p1 = pontosTela[a - 1];
-      const p2 = pontosTela[b - 1];
-      linhaDDA(p1.x, p1.y, p2.x, p2.y);
-    }
-  }
   // console.log("Objeto: ", objeto);
+  return pontosTela;
 }
 
 // funcao de linha
